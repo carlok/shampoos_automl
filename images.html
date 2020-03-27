@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<script src="https://unpkg.com/@tensorflow/tfjs"></script>
+<script src="https://unpkg.com/@tensorflow/tfjs-automl"></script>
+
+<img id="shampoo" src="pics_small/normalizzante/normalizzante_red.jpg">
+
+<canvas id="myCanvas" width="1369" height="1369" style="border:1px solid #d3d3d3;">
+Your browser does not support the HTML5 canvas tag.
+</canvas>
+
+<script>
+async function run() {
+  const img = document.getElementById('shampoo');
+  const options = {score: 0.3, iou: 0.5, topk: 20};
+  const model = await tf.automl.loadObjectDetection('tfjs/model.json');
+
+  const time_prediction_pre = new Date().getTime();
+  const predictions = await model.detect(img, options);
+  const time_prediction_post = new Date().getTime();
+
+  console.log((time_prediction_post - time_prediction_pre)/1000, predictions);
+
+  var c = document.getElementById("myCanvas");
+  var ctx = c.getContext("2d");
+  ctx.drawImage(img, 10, 10);
+
+  ctx.font = "30px Arial";
+
+  predictions.forEach(function(element) {
+	  ctx.beginPath();
+	  ctx.lineWidth = "10";
+	  ctx.strokeStyle = (element.label == 'normalizzante') ? 'blue' : 'red'
+	  ctx.rect(element.box.left, element.box.top, element.box.width, element.box.height);
+	  ctx.font = "30px Arial";
+    ctx.fillStyle = (element.label == 'normalizzante') ? 'blue' : 'red';
+    ctx.textAlign = "center";
+    ctx.fillText(100 * Math.round(element.score * 100) / 100, element.box.left + .5 * element.box.width, element.box.top + .5 * element.box.height);
+	  ctx.stroke();
+  });
+
+  // Show the resulting object on the page.
+  const pre = document.createElement('pre');
+  pre.textContent = JSON.stringify(predictions, null, 2);
+  document.body.append(pre);
+}
+
+window.onload = function() {
+  run();
+}
+</script>
+
+</body>
+</html>

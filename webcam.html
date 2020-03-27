@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>WebcamJS Test Page</title>
+    <style type="text/css">
+      body { font-family: Helvetica, sans-serif; }
+      h2, h3 { margin-top:0; }
+      form { margin-top: 15px; }
+      form > input { margin-right: 15px; }
+      #results { float:right; margin:20px; padding:20px; border:1px solid; background:#ccc; }
+    </style>
+  </head>
+  <body>
+    <div id="results"></div>
+    <h1>WebcamJS Test Page</h1>
+    <h3>Demonstrates simple 320x240 capture &amp; display</h3>
+    <div id="my_camera"></div>
+    <canvas id="myCanvas" width="320" height="240" style="border:1px solid #d3d3d3;">
+      Your browser does not support the HTML5 canvas tag.
+    </canvas>
+    <!-- First, include the Webcam.js JavaScript Library -->
+    <script src="https://unpkg.com/@tensorflow/tfjs"></script>
+    <script src="https://unpkg.com/@tensorflow/tfjs-automl"></script>
+    <script type="text/javascript" src="https://pixlcore.com/demos/webcamjs/webcam.min.js"></script>
+    <!-- Configure a few settings and attach camera -->
+    <script type="text/javascript">
+      Webcam.set({
+      	width: 320,
+      	height: 240,
+      	image_format: 'jpeg',
+      	jpeg_quality: 90
+      });
+      Webcam.attach( '#my_camera' );
+    </script>
+    <!-- A button for taking snaps -->
+    <form>
+      <input type=button value="Take Snapshot" onClick="take_snapshot()">
+    </form>
+    <!-- Code to handle taking the snapshot and displaying it locally -->
+    <script type="text/javascript">
+      async function run(data_uri) {
+          const img = document.getElementById('shampoo');
+          const options = {
+              score: 0.5,
+              iou: 0.5,
+              topk: 20
+          };
+          const model = await tf.automl.loadObjectDetection('tfjs/model.json');
+          const time_prediction_pre = new Date().getTime();
+          const predictions = await model.detect(img, options);
+          const time_prediction_post = new Date().getTime();
+          console.log((time_prediction_post - time_prediction_pre) / 1000, predictions);
+
+          var c = document.getElementById("myCanvas");
+          var ctx = c.getContext("2d");
+          ctx.drawImage(img, 10, 10);
+
+          ctx.font = "30px Arial";
+
+          predictions.forEach(function(element) {
+              ctx.beginPath();
+              ctx.lineWidth = "10";
+              ctx.strokeStyle = (element.label == 'normalizzante') ? 'blue' : 'red';
+              ctx.rect(element.box.left, element.box.top, element.box.width, element.box.height);
+              ctx.font = "30px Arial";
+              ctx.fillStyle = (element.label == 'normalizzante') ? 'blue' : 'red';
+              ctx.textAlign = "center";
+              ctx.fillText(100 * Math.round(element.score * 100) / 100, element.box.left + .5 * element.box.width, element.box.top + .5 * element.box.height);
+              ctx.stroke();
+          });
+
+          // Show the resulting object on the page.
+          /*const pre = document.createElement('pre');
+          pre.textContent = JSON.stringify(predictions, null, 2);
+          document.body.append(pre);*/
+      }
+
+      function take_snapshot() {
+          // take snapshot and get image data
+          Webcam.snap(async function(data_uri) {
+              // display results in page
+              document.getElementById('results').innerHTML =
+                  '<img id="shampoo" src="' + data_uri + '"/>';
+              await run();
+          });
+      }
+      	
+    </script>
+  </body>
+</html>
